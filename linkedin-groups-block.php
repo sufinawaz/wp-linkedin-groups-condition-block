@@ -1,6 +1,7 @@
 <?php
 /**
  *
+ *
  * @package LinkedIn Group Membership Conditional Blocks
  * @version 0.1.0
  */
@@ -83,9 +84,16 @@ HEREDOC;
  *  Notices      								     *
  *****************************************************/
 
+
+$opts = get_option( 'sufi_linkedin_opts' );
+
 if ( isset( $_GET['page'] ) && $_GET['page'] != "linkedin-groups-block" &&
-	( !get_option( 'sufi_linkedin_opts' )["key"] || !get_option( 'sufi_linkedin_opts' )["secret"] || !get_option( 'sufi_linkedin_opts' )["uri"] ) ) {
+	( isEmptyCheck( $opts["key"] ) || isEmptyCheck( $opts["secret"] ) || isEmptyCheck( $opts["uri"] ) ) ) {
 	add_action( 'admin_notices' , 'linkedin_api_admin_notices' );
+}
+
+function isEmptyCheck( $field ) {
+	return !isset( $field ) || isEmpty( $field );
 }
 
 function remove_notice() {

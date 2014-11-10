@@ -1,16 +1,18 @@
 <?php
-define( 'API_KEY',      get_option( 'sufi_linkedin_opts' )["key"] );
-define( 'API_SECRET',   get_option( 'sufi_linkedin_opts' )["secret"] );
-define( 'REDIRECT_URI', get_option( 'sufi_linkedin_opts' )["uri"] );
+$opts = get_option( 'sufi_linkedin_opts' );
+define( 'API_KEY',      $opts["key"] );
+define( 'API_SECRET',   $opts["secret"] );
+define( 'REDIRECT_URI', $opts["uri"] );
 define( 'SCOPE',        'r_emailaddress rw_groups' );
 
 session_name( 'linkedin' );
 session_start();
 
 function getAuthorizationCode() {
+    $opts= get_option( 'sufi_linkedin_opts' );
     $params = array(
         'response_type' => 'code',
-        'client_id' => get_option( 'sufi_linkedin_opts' )["key"],
+        'client_id' =>$opts["key"],
         'scope' => SCOPE,
         'state' => uniqid( '', true ),
         'redirect_uri' => REDIRECT_URI

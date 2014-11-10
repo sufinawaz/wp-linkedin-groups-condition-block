@@ -1,48 +1,17 @@
 <?php
-define('API_KEY',      '771msdxmoggbn3');
-define('API_SECRET',   'BJS96AdnfF1vnNGp');
-define('REDIRECT_URI', 'http://localhost/wp');
+define('API_KEY',      get_option( 'sufi_linkedin_opts' )["key"]);
+define('API_SECRET',   get_option( 'sufi_linkedin_opts' )["secret"]);
+define('REDIRECT_URI', 'http://localhost/wp/?page_id=6');
 define('SCOPE',        'r_basicprofile r_emailaddress rw_groups');
  
 // You'll probably use a database
 session_name('linkedin');
 session_start();
  
-// OAuth 2 Control Flow
-if (isset($_GET['error'])) {
-    // LinkedIn returned an error
-    print $_GET['error'] . ': ' . $_GET['error_description'];
-    exit;
-} elseif (isset($_GET['code'])) {
-    // User authorized your application
-    if ($_SESSION['state'] == $_GET['state']) {
-        // Get token so you can make API calls
-        echo "getting access token";
-        getAccessToken();
-    } else {
-        // CSRF attack? Or did you mix up your states?
-        exit;
-    }
-} else { 
-    if ((empty($_SESSION['expires_at'])) || (time() > $_SESSION['expires_at'])) {
-        // Token has expired, clear the state
-        $_SESSION = array();
-    }
-    if (empty($_SESSION['access_token'])) {
-        // Start authorization process
-        getAuthorizationCode();
-    }
-}
- 
-// Congratulations! You have a valid token. Now fetch your profile 
-$user = fetch('GET', '/v1/people/~:(firstName,lastName)');
-print "Hello $user->firstName $user->lastName.";
-exit;
- 
 function getAuthorizationCode() {
     $params = array(
         'response_type' => 'code',
-        'client_id' => '771msdxmoggbn3',
+        'client_id' => get_option( 'sufi_linkedin_opts' )["key"],
         'scope' => SCOPE,
         'state' => uniqid('', true), // unique long string
         'redirect_uri' => REDIRECT_URI,
@@ -55,8 +24,9 @@ function getAuthorizationCode() {
     $_SESSION['state'] = $params['state'];
  
     // Redirect user to authenticate
-    header("Location: $url");
-    exit;
+    // header("Location: $url");
+    // echo "<br />";
+    return $url;
 }
      
 function getAccessToken() {
@@ -69,7 +39,7 @@ function getAccessToken() {
     );
      
     // Access Token request
-    $url = 'https://www.linkedin.com/uas/oauth2/accessToken?' . http_build_query($params);
+    $url = 'https://www.linkedin.com/uas/oauth2/accessToken?'. http_build_query($params);
      
     // Tell streams to make a POST request
     $context = stream_context_create(
@@ -80,13 +50,20 @@ function getAccessToken() {
     );
  
     // Retrieve access token information
-    $response = file_get_contents($url, false, $context);
+    // print  "entered access token";
+    $response = @file_get_contents($url, false, $context);
+
+    // var_dump( $response);
  
     // Native PHP object, please
     $token = json_decode($response);
  
     // Store access token and expiration time
+    // echo "<pre>";
+    // var_dump($token);
+    // echo "</pre>";
     $_SESSION['access_token'] = $token->access_token; // guard this! 
+    // echo $_SESSION['access_token'];
     $_SESSION['expires_in']   = $token->expires_in; // relative time (in seconds)
     $_SESSION['expires_at']   = time() + $_SESSION['expires_in']; // absolute time
      
@@ -94,8 +71,8 @@ function getAccessToken() {
 }
  
 function fetch($method, $resource, $body = '') {
-    print $_SESSION['access_token'];
- 
+    // $_SESSION['access_token']="";
+    // print $_SESSION['access_token'];
     $opts = array(
         'http'=>array(
             'method' => $method,
@@ -107,16 +84,19 @@ function fetch($method, $resource, $body = '') {
     $url = 'https://api.linkedin.com' . $resource;
  
     // Append query parameters (if there are any)
-    if (count($params)) { $url .= '?' . http_build_query($params); }
+    if (isset($params) && count($params)) { $url .= '?' . http_build_query($params); }
  
     // Tell streams to make a (GET, POST, PUT, or DELETE) request
     // And use OAuth 2 access token as Authorization
     $context = stream_context_create($opts);
  
     // Hocus Pocus
-    $response = file_get_contents($url, false, $context);
- 
-    // Native PHP object, please
-    return json_decode($response);
+    try{
+        $response = @file_get_contents($url, false, $context);
+        // Native PHP object, please
+        return json_decode($response);
+    } catch (Exception $e) {
+        return null;
+    }
 }
 ?>

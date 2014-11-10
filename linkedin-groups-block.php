@@ -101,7 +101,10 @@ function linkedin_api_admin_notices() {
 	echo "<div class='updated fade error'><p>LinkedIn Groups Plugin is not configured yet. <a href='".get_admin_url()."options-general.php?page=linkedin-groups-block'>Please do it now</a>.</p></div>\n";
 }
 function getRevokeLink(){
-	return 	'<a href="'.$_SERVER['PHP_SELF'].'?'.LINKEDIN::_GET_TYPE.'=revoke" >Logout</a>';
+	echo '<a href="'.add_query_arg('LinkedIn','revoke', get_the_permalink()).'" title="Revoke LinkedIn Authorization">Revoke</a><br />';
+}
+function getAuthorizationLink(){
+	echo '<a href="'.getAuthorizationCode().'" title="Authorize at LinkedIn">Authorize</a>';
 }
 /*****************************************************
  *  Shortcodes     								     *
@@ -111,29 +114,26 @@ function linkedin_shortcode( $atts , $content=null) {
 	if (isset($_GET['error'])) {
 	    // LinkedIn returned an error
 	    print $_GET['error'] . ': ' . $_GET['error_description'];
-	    exit;
 	} elseif (isset($_GET['code'])) {
 	    // User authorized your application
 	    if ($_SESSION['state'] == $_GET['state']) {
 	        // Get token so you can make API calls
-	        echo "session state";
 	        // echo $_SESSION['access_token'];
-	        echo getAccessToken();
+	        getAccessToken();
 	    } else {
 	        // CSRF attack? Or did you mix up your states?
 	        exit;
 	    }
-	} 
-	// else if( isset( $_GET['LinkedIn'] ) && $_GET['LinkedIn'] == "authorize" ) {} 
-	else { 
+	} else if( isset( $_GET['LinkedIn'] ) && $_GET['LinkedIn'] == "revoke" ) {
+        $_SESSION = array();
+        getAuthorizationLink();
+	} else { 
 	    if ((empty($_SESSION['expires_at'])) || (time() > $_SESSION['expires_at'])) {
 	        // Token has expired, clear the state
-	        $_SESSION = array();
+	         $_SESSION = array();
 	    }
-	    if (empty($_SESSION['access_token'])) {
-	        // Start authorization process
-	        // return '<a href="'.add_query_arg( 'LinkedIn', 'authorize',get_the_permalink() ).'" title="Authorize at LinkedIn">Authorize</a>';
-	        echo '<a href="'.getAuthorizationCode().'" title="Authorize at LinkedIn">Authorize</a>';
+	    if (!isset($_SESSION['access_token']) || empty($_SESSION['access_token'])) {
+	        getAuthorizationLink();
 	    } 
 	}
     $a = shortcode_atts( array(
@@ -141,13 +141,17 @@ function linkedin_shortcode( $atts , $content=null) {
     ), $atts );
 
     // Congratulations! You have a valid token. Now fetch your profile 
-	$user = fetch('GET', '/v1/people/~/group-memberships/'.$a['group']);
-	// echo '<pre>';
-	// var_dump($user);
-	// echo '</pre>';
-	
-	if(isset($user) && $user->membershipState->code == "member"){
-		return $content;
+    if(isset($_SESSION['access_token']) && !empty($_SESSION['access_token'])){
+		$user = fetch('GET', '/v1/people/~/group-memberships/'.$a['group']);
+		// echo '<pre>';
+		// var_dump($user);
+		// echo '</pre>';
+		if(isset($user) && $user->membershipState->code == "member") {
+			getRevokeLink();
+			return $content;
+		} else {
+			echo "Not a member of Graduate Business Forum (Alumni Group)";
+		}
 	} 
     return "";
 }

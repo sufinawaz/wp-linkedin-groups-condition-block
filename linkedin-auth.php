@@ -62,12 +62,16 @@ function getAccessToken() {
     // echo "<pre>";
     // var_dump($token);
     // echo "</pre>";
+    if(isset($token)){
     $_SESSION['access_token'] = $token->access_token; // guard this! 
     // echo $_SESSION['access_token'];
     $_SESSION['expires_in']   = $token->expires_in; // relative time (in seconds)
     $_SESSION['expires_at']   = time() + $_SESSION['expires_in']; // absolute time
      
     return true;
+    } else {
+        return false;
+    }
 }
  
 function fetch($method, $resource, $body = '') {

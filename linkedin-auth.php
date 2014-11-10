@@ -1,8 +1,8 @@
 <?php
-define('API_KEY',      '771msdxmoggbn3'                                          );
-define('API_SECRET',   'BJS96AdnfF1vnNGp'                                       );
+define('API_KEY',      '771msdxmoggbn3');
+define('API_SECRET',   'BJS96AdnfF1vnNGp');
 define('REDIRECT_URI', 'http://localhost/wp');
-define('SCOPE',        'r_basicprofile r_emailaddress rw_groups'                              );
+define('SCOPE',        'r_basicprofile r_emailaddress rw_groups');
  
 // You'll probably use a database
 session_name('linkedin');
@@ -17,6 +17,7 @@ if (isset($_GET['error'])) {
     // User authorized your application
     if ($_SESSION['state'] == $_GET['state']) {
         // Get token so you can make API calls
+        echo "getting access token";
         getAccessToken();
     } else {
         // CSRF attack? Or did you mix up your states?
